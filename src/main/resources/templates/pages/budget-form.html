@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" 
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/base}">
+<head>
+    <title th:text="${pageTitle}">Budget Form - Personal Finance Tracker</title>
+    <style>
+        .budget-form-container {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        .budget-form-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><defs><radialGradient id="a" cx="50%" cy="50%"><stop offset="0%" stop-color="%23667eea" stop-opacity="0.1"/><stop offset="100%" stop-color="%23667eea" stop-opacity="0"/></radialGradient></defs><circle cx="100" cy="100" r="80" fill="url(%23a)"/><circle cx="900" cy="200" r="120" fill="url(%23a)"/><circle cx="500" cy="800" r="100" fill="url(%23a)"/><circle cx="200" cy="600" r="60" fill="url(%23a)"/></svg>') no-repeat center center;
+            background-size: cover;
+            opacity: 0.6;
+            z-index: 0;
+        }
+        
+        .budget-form-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        .page-header h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .btn-back {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            border: none;
+            border-radius: 15px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .btn-back:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(108, 117, 125, 0.4);
+            color: white;
+        }
+        
+        .form-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .form-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c);
+            background-size: 300% 100%;
+            animation: gradientShift 3s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            background: white;
+        }
+        
+        .form-control.is-invalid {
+            border-color: #dc3545;
+        }
+        
+        .invalid-feedback {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 15px;
+            padding: 1rem 2rem;
+            font-weight: 600;
+            color: white;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: block;
+        }
+        
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+        
+        .btn-cancel {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            border: none;
+            border-radius: 15px;
+            padding: 1rem 2rem;
+            font-weight: 600;
+            color: white;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: block;
+            text-decoration: none;
+        }
+        
+        .btn-cancel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(108, 117, 125, 0.4);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .button-container {
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .page-header h2 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <div class="budget-form-container">
+            <div class="container budget-form-content">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 th:text="${pageTitle}">Create New Budget</h2>
+                            <p class="mb-0">Set up a new budget to track your spending</p>
+                        </div>
+                        <a th:href="@{/budgets}" class="btn btn-back">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Budgets
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Budget Form -->
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 col-xl-6">
+                        <div class="card form-card">
+                            <div class="card-body p-4">
+                                <form th:action="@{/api/budgets}" th:object="${budget}" method="post" id="budgetForm">
+                                    <!-- Budget Name -->
+                                    <div class="form-group">
+                                        <label for="name" class="form-label">Budget Name *</label>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               th:field="*{name}"
+                                               th:class="${#fields.hasErrors('name')} ? 'form-control is-invalid' : 'form-control'"
+                                               id="name" 
+                                               placeholder="e.g., Monthly Groceries"
+                                               required>
+                                        <div th:if="${#fields.hasErrors('name')}" class="invalid-feedback">
+                                            <span th:errors="*{name}"></span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Description -->
+                                    <div class="form-group">
+                                        <label for="description" class="form-label">Description</label>
+                                        <textarea class="form-control" 
+                                                  th:field="*{description}"
+                                                  th:class="${#fields.hasErrors('description')} ? 'form-control is-invalid' : 'form-control'"
+                                                  id="description" 
+                                                  rows="3"
+                                                  placeholder="Optional description for this budget"></textarea>
+                                        <div th:if="${#fields.hasErrors('description')}" class="invalid-feedback">
+                                            <span th:errors="*{description}"></span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Budget Amount -->
+                                    <div class="form-group">
+                                        <label for="budgetAmount" class="form-label">Budget Amount *</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" 
+                                                   class="form-control" 
+                                                   th:field="*{budgetAmount}"
+                                                   th:class="${#fields.hasErrors('budgetAmount')} ? 'form-control is-invalid' : 'form-control'"
+                                                   id="budgetAmount" 
+                                                   step="0.01"
+                                                   min="0.01"
+                                                   placeholder="0.00"
+                                                   required>
+                                        </div>
+                                        <div th:if="${#fields.hasErrors('budgetAmount')}" class="invalid-feedback">
+                                            <span th:errors="*{budgetAmount}"></span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Date Range -->
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="startDate" class="form-label">Start Date *</label>
+                                            <input type="date" 
+                                                   class="form-control" 
+                                                   th:field="*{startDate}"
+                                                   th:class="${#fields.hasErrors('startDate')} ? 'form-control is-invalid' : 'form-control'"
+                                                   id="startDate" 
+                                                   required>
+                                            <div th:if="${#fields.hasErrors('startDate')}" class="invalid-feedback">
+                                                <span th:errors="*{startDate}"></span>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="endDate" class="form-label">End Date *</label>
+                                            <input type="date" 
+                                                   class="form-control" 
+                                                   th:field="*{endDate}"
+                                                   th:class="${#fields.hasErrors('endDate')} ? 'form-control is-invalid' : 'form-control'"
+                                                   id="endDate" 
+                                                   required>
+                                            <div th:if="${#fields.hasErrors('endDate')}" class="invalid-feedback">
+                                                <span th:errors="*{endDate}"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Category Selection -->
+                                    <div class="form-group">
+                                        <label for="categoryId" class="form-label">Category (Optional)</label>
+                                        <select class="form-control" 
+                                                th:field="*{categoryId}"
+                                                th:class="${#fields.hasErrors('categoryId')} ? 'form-control is-invalid' : 'form-control'"
+                                                id="categoryId">
+                                            <option value="">Select a category (optional)</option>
+                                            <option th:each="category : ${categories}" 
+                                                    th:value="${category.id}" 
+                                                    th:text="${category.name}">Category Name</option>
+                                        </select>
+                                        <div th:if="${#fields.hasErrors('categoryId')}" class="invalid-feedback">
+                                            <span th:errors="*{categoryId}"></span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Active Status -->
+                                    <div class="form-group">
+                                        <div class="form-check">
+                                            <input class="form-check-input" 
+                                                   type="checkbox" 
+                                                   th:field="*{isActive}"
+                                                   id="isActive">
+                                            <label class="form-check-label" for="isActive">
+                                                Active Budget
+                                            </label>
+                                        </div>
+                                        <small class="form-text text-muted">
+                                            Active budgets will be included in spending calculations and alerts.
+                                        </small>
+                                    </div>
+
+                                    <!-- Button Container -->
+                                    <div class="button-container">
+                                        <!-- Submit Button -->
+                                        <button type="submit" class="btn btn-submit">
+                                            <i class="fas fa-save me-2"></i>Create Budget
+                                        </button>
+                                        
+                                        <!-- Cancel Button -->
+                                        <a th:href="@{/budgets}" class="btn btn-cancel">
+                                            <i class="fas fa-times me-2"></i>Cancel
+                                        </a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Form validation and enhancement
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('budgetForm');
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            
+            // Set minimum date to today
+            const today = new Date().toISOString().split('T')[0];
+            startDateInput.min = today;
+            
+            // Update end date minimum when start date changes
+            startDateInput.addEventListener('change', function() {
+                endDateInput.min = this.value;
+                if (endDateInput.value && endDateInput.value < this.value) {
+                    endDateInput.value = this.value;
+                }
+            });
+            
+            // Form submission with loading state
+            form.addEventListener('submit', function(e) {
+                const submitBtn = form.querySelector('.btn-submit');
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
+                submitBtn.disabled = true;
+            });
+        });
+    </script>
+</body>
+</html>

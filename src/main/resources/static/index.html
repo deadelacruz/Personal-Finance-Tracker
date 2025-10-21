@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title>Personal Finance Tracker</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .main-content {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 25px;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin: 5px 0;
+            transition: all 0.3s ease;
+        }
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+        }
+        .stat-card .card-body {
+            padding: 1.5rem;
+        }
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .table thead th {
+            background-color: #667eea;
+            color: white;
+            border: none;
+        }
+        .loading {
+            display: none;
+        }
+        .loading.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-wallet2"></i> Personal Finance Tracker
+            </a>
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle"></i> <span id="userName">User</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="showProfile()">
+                            <i class="bi bi-person"></i> Profile
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="changePassword()">
+                            <i class="bi bi-key"></i> Change Password
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="logout()">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="p-3">
+                    <nav class="nav flex-column">
+                        <a class="nav-link active" href="#" onclick="showDashboard()">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                        <a class="nav-link" href="#" onclick="showTransactions()">
+                            <i class="bi bi-arrow-left-right"></i> Transactions
+                        </a>
+                        <a class="nav-link" href="#" onclick="showCategories()">
+                            <i class="bi bi-tags"></i> Categories
+                        </a>
+                        <a class="nav-link" href="#" onclick="showBudgets()">
+                            <i class="bi bi-pie-chart"></i> Budgets
+                        </a>
+                        <a class="nav-link" href="#" onclick="showReports()">
+                            <i class="bi bi-graph-up"></i> Reports
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <div class="p-4">
+                    <!-- Loading Spinner -->
+                    <div class="loading text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+
+                    <!-- Content Area -->
+                    <div id="content">
+                        <!-- Dashboard will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Login</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="loginUsername" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="loginUsername" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="loginPassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="loginPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Login</button>
+                    </form>
+                    <div class="text-center mt-3">
+                        <a href="#" onclick="showRegisterModal()">Don't have an account? Register</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal fade" id="registerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Register</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="registerForm">
+                        <div class="mb-3">
+                            <label for="registerUsername" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="registerUsername" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="registerEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerFirstName" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="registerFirstName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerLastName" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="registerLastName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerPassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="registerPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Register</button>
+                    </form>
+                    <div class="text-center mt-3">
+                        <a href="#" onclick="showLoginModal()">Already have an account? Login</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Modal -->
+    <div class="modal fade" id="transactionModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="transactionModalTitle">Add Transaction</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="transactionForm">
+                        <input type="hidden" id="transactionId">
+                        <div class="mb-3">
+                            <label for="transactionDescription" class="form-label">Description</label>
+                            <input type="text" class="form-control" id="transactionDescription" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="transactionAmount" class="form-label">Amount</label>
+                            <input type="number" step="0.01" class="form-control" id="transactionAmount" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="transactionType" class="form-label">Type</label>
+                            <select class="form-select" id="transactionType" required>
+                                <option value="">Select Type</option>
+                                <option value="INCOME">Income</option>
+                                <option value="EXPENSE">Expense</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="transactionDate" class="form-label">Date</label>
+                            <input type="datetime-local" class="form-control" id="transactionDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="transactionCategory" class="form-label">Category</label>
+                            <select class="form-select" id="transactionCategory">
+                                <option value="">Select Category</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="transactionNotes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="transactionNotes" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Save Transaction</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div class="modal fade" id="categoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="categoryModalTitle">Add Category</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="categoryForm">
+                        <input type="hidden" id="categoryId">
+                        <div class="mb-3">
+                            <label for="categoryName" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="categoryName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="categoryDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryColor" class="form-label">Color</label>
+                            <input type="color" class="form-control form-control-color" id="categoryColor" value="#667eea">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Save Category</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Modal -->
+    <div class="modal fade" id="budgetModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="budgetModalTitle">Add Budget</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="budgetForm">
+                        <input type="hidden" id="budgetId">
+                        <div class="mb-3">
+                            <label for="budgetName" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="budgetName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="budgetDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="budgetDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="budgetAmount" class="form-label">Budget Amount</label>
+                            <input type="number" step="0.01" class="form-control" id="budgetAmount" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="budgetStartDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="budgetStartDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="budgetEndDate" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="budgetEndDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="budgetCategory" class="form-label">Category (Optional)</label>
+                            <select class="form-select" id="budgetCategory">
+                                <option value="">General Budget</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Save Budget</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    
+    <!-- Application Scripts -->
+    <script src="js/app.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/transactions.js"></script>
+    <script src="js/categories.js"></script>
+    <script src="js/budgets.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/reports.js"></script>
+</body>
+</html>

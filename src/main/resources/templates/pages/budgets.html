@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" 
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/base}">
+<head>
+    <title>Budgets - Personal Finance Tracker</title>
+    <style>
+        .budgets-container {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        .budgets-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><defs><radialGradient id="a" cx="50%" cy="50%"><stop offset="0%" stop-color="%23667eea" stop-opacity="0.1"/><stop offset="100%" stop-color="%23667eea" stop-opacity="0"/></radialGradient></defs><circle cx="100" cy="100" r="80" fill="url(%23a)"/><circle cx="900" cy="200" r="120" fill="url(%23a)"/><circle cx="500" cy="800" r="100" fill="url(%23a)"/><circle cx="200" cy="600" r="60" fill="url(%23a)"/></svg>') no-repeat center center;
+            background-size: cover;
+            opacity: 0.6;
+            z-index: 0;
+        }
+        
+        .budgets-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        .page-header h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .btn-add-budget {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            border-radius: 15px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .btn-add-budget:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(40, 167, 69, 0.4);
+            color: white;
+        }
+        
+        .btn-outline-light {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 15px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .btn-outline-light:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 255, 255, 0.2);
+        }
+        
+        .enhanced-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .enhanced-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .enhanced-card .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px 20px 0 0;
+            padding: 1.5rem;
+            border: none;
+        }
+        
+        .enhanced-card .card-header h5 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            color: #667eea;
+            opacity: 0.5;
+            margin-bottom: 1rem;
+        }
+        
+        .empty-state h6 {
+            color: #6c757d;
+            margin-bottom: 1.5rem;
+        }
+        
+        .floating-action-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .floating-action-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.6);
+        }
+        
+        /* Budget Overview Container with Border */
+        .budget-overview-container {
+            border: 2px solid #e3f2fd;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e3f2fd 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .budget-overview-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #2196f3 0%, #21cbf3 100%);
+        }
+        
+        .budget-overview-container .chart-container {
+            background: transparent;
+            box-shadow: none;
+            border-radius: 0;
+        }
+        
+        /* Budget Summary Card Styles */
+        .budget-summary-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .budget-summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+        
+        .budget-summary-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--card-color);
+        }
+        
+        .budget-summary-card .card-body {
+            padding: 1.5rem;
+        }
+        
+        .budget-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(23, 162, 184, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+        }
+        
+        .budget-progress {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--budget-color, #6c757d);
+        }
+        
+        .budget-progress:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .budget-color-indicator {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .progress {
+            border-radius: 10px;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        
+        .progress-bar {
+            border-radius: 10px;
+            transition: width 0.6s ease;
+        }
+    </style>
+</head>
+<body>
+
+<div layout:fragment="content" class="budgets-container">
+    <div class="budgets-content">
+        <!-- Enhanced Page Header -->
+        <div class="page-header">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h2><i class="bi bi-pie-chart me-3"></i> Budget Management</h2>
+                    <p class="mb-0 opacity-75">Track and manage your spending budgets</p>
+                </div>
+                <div class="col-auto">
+                    <a th:href="@{/dashboard}" class="btn btn-outline-light me-3">
+                        <i class="bi bi-arrow-left me-2"></i> Back to Dashboard
+                    </a>
+                    <a th:href="@{/budgets/new}" class="btn btn-add-budget">
+                        <i class="bi bi-plus me-2"></i> Add Budget
+                    </a>
+                </div>
+            </div>
+        </div>
+    
+    <!-- Enhanced Budget Overview Section with Border - Always Show -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="chart-container budget-overview-container">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i> Budget Overview</h5>
+                    <a th:href="@{/budgets/new}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-plus me-1"></i>Add Budget
+                    </a>
+                </div>
+                
+                <!-- Budget Summary Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-4 mb-3">
+                        <div class="card budget-summary-card" style="--card-color: #17a2b8;">
+                            <div class="card-body text-center">
+                                <div class="budget-icon mb-3">
+                                    <i class="bi bi-currency-dollar" style="font-size: 2rem; color: #17a2b8;"></i>
+                                </div>
+                                <h4 class="text-info">$<span th:text="${#numbers.formatDecimal(totalBudget ?: 0, 1, 2)}">0.00</span></h4>
+                                <p class="text-muted mb-0">Total Budget</p>
+                                <small class="text-muted">All budgets</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card budget-summary-card" style="--card-color: #ffc107;">
+                            <div class="card-body text-center">
+                                <div class="budget-icon mb-3">
+                                    <i class="bi bi-percent" style="font-size: 2rem; color: #ffc107;"></i>
+                                </div>
+                                <h4 class="text-warning"><span th:text="${#numbers.formatDecimal(averageUtilization ?: 0, 1, 1)}">0.0</span>%</h4>
+                                <p class="text-muted mb-0">Budget Utilization</p>
+                                <small class="text-muted">Average usage</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card budget-summary-card" style="--card-color: #dc3545;">
+                            <div class="card-body text-center">
+                                <div class="budget-icon mb-3">
+                                    <i class="bi bi-exclamation-triangle" style="font-size: 2rem; color: #dc3545;"></i>
+                                </div>
+                                <h4 class="text-danger"><span th:text="${overBudgetCount ?: 0}">0</span></h4>
+                                <p class="text-muted mb-0">Over Budget</p>
+                                <small class="text-muted">Need attention</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Individual Budget Progress - Only show if budgets exist -->
+                <div class="row" th:if="${!#lists.isEmpty(currentBudgets)}">
+                    <div class="col-12">
+                        <h6 class="mb-3"><i class="bi bi-list-ul me-2"></i>Budget Progress</h6>
+                        <div th:each="budget : ${currentBudgets}" class="budget-progress mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="budget-color-indicator me-3" th:style="'background-color: ' + ${budget.category?.colorCode ?: '#6c757d'} + '; width: 12px; height: 12px; border-radius: 50%;'"></div>
+                                    <div>
+                                        <h6 class="mb-0" th:text="${budget.name}">Budget Name</h6>
+                                        <small class="text-muted" th:text="${budget.category?.name ?: 'No Category'}">Category</small>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold" th:class="${budget.overBudget} ? 'text-danger' : 'text-success'">
+                                        $<span th:text="${#numbers.formatDecimal(budget.spentAmount, 1, 2)}">0.00</span> / $<span th:text="${#numbers.formatDecimal(budget.budgetAmount, 1, 2)}">0.00</span>
+                                    </div>
+                                    <small th:class="${budget.overBudget} ? 'text-danger' : 'text-muted'" th:text="${#numbers.formatDecimal(budget.utilizationPercentage, 1, 1)} + '%'">0.0%</small>
+                                </div>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar" 
+                                     th:class="${budget.overBudget} ? 'bg-danger' : 'bg-success'"
+                                     th:style="'width: ' + ${Math.min(budget.utilizationPercentage, 100)} + '%;'"
+                                     role="progressbar">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Empty State Message when no budgets -->
+                <div class="row" th:if="${#lists.isEmpty(currentBudgets)}">
+                    <div class="col-12">
+                        <div class="text-center py-4">
+                            <i class="bi bi-pie-chart" style="font-size: 3rem; color: #667eea; opacity: 0.5;"></i>
+                            <h6 class="text-muted mt-3 mb-3">No budgets created yet</h6>
+                            <p class="text-muted mb-4">Create your first budget to start tracking your spending</p>
+                            <a th:href="@{/budgets/new}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-2"></i>Create Your First Budget
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+        <!-- Enhanced Current Budgets -->
+        <div class="card enhanced-card mb-4">
+            <div class="card-header">
+                <h5><i class="bi bi-clock me-2"></i> Current Budgets</h5>
+            </div>
+            <div class="card-body">
+                <div th:if="${#lists.isEmpty(currentBudgets)}" class="empty-state">
+                    <i class="bi bi-pie-chart"></i>
+                    <h6>No current budgets</h6>
+                    <a th:href="@{/budgets/new}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Create Your First Budget
+                    </a>
+                </div>
+                <div th:unless="${#lists.isEmpty(currentBudgets)}" class="row">
+                    <div th:each="budget : ${currentBudgets}" class="col-md-6 col-lg-4 mb-4">
+                        <div th:replace="fragments/cards :: budget-card(${budget})"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Enhanced All Budgets -->
+        <div class="card enhanced-card">
+            <div class="card-header">
+                <h5><i class="bi bi-list me-2"></i> All Budgets</h5>
+            </div>
+            <div class="card-body">
+                <div th:if="${#lists.isEmpty(budgets)}" class="empty-state">
+                    <i class="bi bi-pie-chart"></i>
+                    <h6>No budgets found</h6>
+                    <a th:href="@{/budgets/new}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Create Your First Budget
+                    </a>
+                </div>
+                <div th:unless="${#lists.isEmpty(budgets)}" class="row">
+                    <div th:each="budget : ${budgets}" class="col-md-6 col-lg-4 mb-4">
+                        <div th:replace="fragments/cards :: budget-card(${budget})"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Floating Action Button -->
+        <button class="floating-action-btn" onclick="window.location.href='/budgets/new'" title="Add Budget">
+            <i class="bi bi-plus"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Include Budget Form Modal -->
+<div th:replace="fragments/forms :: budget-form"></div>
+
+</body>
+</html>

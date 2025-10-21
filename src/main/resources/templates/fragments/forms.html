@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Transaction Form Fragment -->
+<div th:fragment="transaction-form" class="modal fade" id="transactionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" th:text="${transaction != null} ? 'Edit Transaction' : 'Add Transaction'">Add Transaction</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form th:action="@{/transactions}" th:object="${transaction}" method="post">
+                    <input type="hidden" th:field="*{id}">
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <input type="text" class="form-control" th:field="*{description}" 
+                               th:class="${#fields.hasErrors('description')} ? 'form-control is-invalid' : 'form-control'"
+                               required>
+                        <div th:if="${#fields.hasErrors('description')}" class="invalid-feedback">
+                            <span th:errors="*{description}"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Amount</label>
+                        <input type="number" step="0.01" class="form-control" th:field="*{amount}"
+                               th:class="${#fields.hasErrors('amount')} ? 'form-control is-invalid' : 'form-control'"
+                               required>
+                        <div th:if="${#fields.hasErrors('amount')}" class="invalid-feedback">
+                            <span th:errors="*{amount}"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="transactionType" class="form-label">Type</label>
+                        <select class="form-select" th:field="*{transactionType}"
+                                th:class="${#fields.hasErrors('transactionType')} ? 'form-select is-invalid' : 'form-select'"
+                                required>
+                            <option value="">Select Type</option>
+                            <option value="INCOME">Income</option>
+                            <option value="EXPENSE">Expense</option>
+                        </select>
+                        <div th:if="${#fields.hasErrors('transactionType')}" class="invalid-feedback">
+                            <span th:errors="*{transactionType}"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="transactionDate" class="form-label">Date</label>
+                        <input type="datetime-local" class="form-control" th:field="*{transactionDate}"
+                               th:class="${#fields.hasErrors('transactionDate')} ? 'form-control is-invalid' : 'form-control'"
+                               required>
+                        <div th:if="${#fields.hasErrors('transactionDate')}" class="invalid-feedback">
+                            <span th:errors="*{transactionDate}"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Category</label>
+                        <select class="form-select" th:field="*{categoryId}">
+                            <option value="">Select Category</option>
+                            <option th:each="category : ${categories}" 
+                                    th:value="${category.id}" 
+                                    th:text="${category.name}"></option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" th:field="*{notes}" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check"></i> Save Transaction
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Category Form Fragment -->
+<div th:fragment="category-form" class="modal fade" id="categoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" th:text="${category != null} ? 'Edit Category' : 'Add Category'">Add Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form th:action="@{/categories}" th:object="${category}" method="post">
+                    <input type="hidden" th:field="*{id}">
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" th:field="*{name}"
+                               th:class="${#fields.hasErrors('name')} ? 'form-control is-invalid' : 'form-control'"
+                               required>
+                        <div th:if="${#fields.hasErrors('name')}" class="invalid-feedback">
+                            <span th:errors="*{name}"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" th:field="*{description}" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="colorCode" class="form-label">Color</label>
+                        <input type="color" class="form-control form-control-color" th:field="*{colorCode}">
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check"></i> Save Category
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Budget Form Fragment -->
+<div th:fragment="budget-form" class="modal fade" id="budgetModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" th:text="${budget != null} ? 'Edit Budget' : 'Add Budget'">Add Budget</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form th:action="@{/budgets}" th:object="${budget}" method="post">
+                    <input type="hidden" th:field="*{id}">
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" th:field="*{name}"
+                               th:class="${#fields.hasErrors('name')} ? 'form-control is-invalid' : 'form-control'"
+                               required>
+                        <div th:if="${#fields.hasErrors('name')}" class="invalid-feedback">
+                            <span th:errors="*{name}"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" th:field="*{description}" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="budgetAmount" class="form-label">Budget Amount</label>
+                        <input type="number" step="0.01" class="form-control" th:field="*{budgetAmount}"
+                               th:class="${#fields.hasErrors('budgetAmount')} ? 'form-control is-invalid' : 'form-control'"
+                               required>
+                        <div th:if="${#fields.hasErrors('budgetAmount')}" class="invalid-feedback">
+                            <span th:errors="*{budgetAmount}"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="startDate" class="form-label">Start Date</label>
+                                <input type="date" class="form-control" th:field="*{startDate}"
+                                       th:class="${#fields.hasErrors('startDate')} ? 'form-control is-invalid' : 'form-control'"
+                                       required>
+                                <div th:if="${#fields.hasErrors('startDate')}" class="invalid-feedback">
+                                    <span th:errors="*{startDate}"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="endDate" class="form-label">End Date</label>
+                                <input type="date" class="form-control" th:field="*{endDate}"
+                                       th:class="${#fields.hasErrors('endDate')} ? 'form-control is-invalid' : 'form-control'"
+                                       required>
+                                <div th:if="${#fields.hasErrors('endDate')}" class="invalid-feedback">
+                                    <span th:errors="*{endDate}"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Category (Optional)</label>
+                        <select class="form-select" th:field="*{categoryId}">
+                            <option value="">General Budget</option>
+                            <option th:each="category : ${categories}" 
+                                    th:value="${category.id}" 
+                                    th:text="${category.name}"></option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check"></i> Save Budget
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

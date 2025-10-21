@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" 
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/base}">
+<head>
+    <title>Transactions - Personal Finance Tracker</title>
+    <style>
+        .transactions-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .transactions-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><defs><radialGradient id="a" cx="50%" cy="50%"><stop offset="0%" stop-color="%23ffffff" stop-opacity="0.1"/><stop offset="100%" stop-color="%23ffffff" stop-opacity="0"/></radialGradient></defs><circle cx="200" cy="200" r="150" fill="url(%23a)"/><circle cx="800" cy="300" r="200" fill="url(%23a)"/><circle cx="400" cy="700" r="180" fill="url(%23a)"/><circle cx="100" cy="600" r="120" fill="url(%23a)"/></svg>') no-repeat center center;
+            background-size: cover;
+            opacity: 0.3;
+            z-index: 0;
+        }
+        
+        .transactions-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .page-header {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .page-header h2 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .btn-add-transaction {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            border-radius: 15px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+        
+        .btn-add-transaction:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(40, 167, 69, 0.4);
+            color: white;
+        }
+        
+        .btn-back-dashboard {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            border: none;
+            border-radius: 15px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+        }
+        
+        .btn-back-dashboard:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(108, 117, 125, 0.4);
+            color: white;
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .summary-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--card-color) 0%, var(--card-color-light) 100%);
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .summary-card.income {
+            --card-color: #28a745;
+            --card-color-light: #20c997;
+        }
+        
+        .summary-card.expense {
+            --card-color: #dc3545;
+            --card-color-light: #e74c3c;
+        }
+        
+        .summary-card.networth {
+            --card-color: #667eea;
+            --card-color-light: #764ba2;
+        }
+        
+        .summary-card.count {
+            --card-color: #ffc107;
+            --card-color-light: #ffb347;
+        }
+        
+        .filters-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .form-control, .form-select {
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            transform: translateY(-2px);
+            background: white;
+        }
+        
+        .btn-filter {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 15px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            margin-right: 0.5rem;
+        }
+        
+        .btn-filter:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+        
+        .btn-clear {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            border: none;
+            border-radius: 15px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-clear:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(108, 117, 125, 0.4);
+            color: white;
+        }
+        
+        .transactions-table-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+        }
+        
+        .table {
+            margin-bottom: 0;
+        }
+        
+        .table thead th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .table tbody tr {
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .table tbody tr:hover {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            transform: scale(1.01);
+        }
+        
+        .table tbody td {
+            padding: 1rem;
+            vertical-align: middle;
+            border: none;
+        }
+        
+        .badge {
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            font-size: 0.8rem;
+        }
+        
+        .badge.bg-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+        }
+        
+        .badge.bg-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%) !important;
+        }
+        
+        .btn-group-sm .btn {
+            border-radius: 10px;
+            margin: 0 2px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-outline-primary {
+            border: 2px solid #667eea;
+            color: #667eea;
+        }
+        
+        .btn-outline-primary:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+        
+        .btn-outline-danger {
+            border: 2px solid #dc3545;
+            color: #dc3545;
+        }
+        
+        .btn-outline-danger:hover {
+            background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
+            border-color: #dc3545;
+            transform: translateY(-2px);
+        }
+        
+        .pagination .page-link {
+            border-radius: 15px;
+            margin: 0 2px;
+            border: 2px solid #e9ecef;
+            color: #667eea;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .pagination .page-link:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .pagination .page-item.active .page-link {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        .floating-elements {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+        
+        .floating-element {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .floating-element:nth-child(1) {
+            width: 80px;
+            height: 80px;
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+        
+        .floating-element:nth-child(2) {
+            width: 120px;
+            height: 120px;
+            top: 20%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+        
+        .floating-element:nth-child(3) {
+            width: 60px;
+            height: 60px;
+            bottom: 20%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div layout:fragment="content" class="transactions-container">
+    <div class="floating-elements">
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+    </div>
+    
+    <div class="transactions-content">
+    <!-- Enhanced Page Header -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h2><i class="bi bi-arrow-left-right me-3"></i>Transactions</h2>
+                <p class="mb-0 opacity-75">Manage your financial transactions with style</p>
+            </div>
+            <div class="col-auto">
+                <a th:href="@{/dashboard}" class="btn btn-back-dashboard me-3">
+                    <i class="bi bi-house me-2"></i> Back to Dashboard
+                </a>
+                <a th:href="@{/transactions/new}" class="btn btn-add-transaction">
+                    <i class="bi bi-plus me-2"></i> Add Transaction
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Enhanced Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="summary-card income">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <i class="bi bi-arrow-up-circle fs-1" style="color: #28a745;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">Total Income</h6>
+                        <h4 class="mb-0" style="color: #28a745;">$<span th:text="${#numbers.formatDecimal(totalIncome, 1, 2)}">0.00</span></h4>
+                        <small class="text-muted">All time</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="summary-card expense">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <i class="bi bi-arrow-down-circle fs-1" style="color: #dc3545;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">Total Expenses</h6>
+                        <h4 class="mb-0" style="color: #dc3545;">$<span th:text="${#numbers.formatDecimal(totalExpenses, 1, 2)}">0.00</span></h4>
+                        <small class="text-muted">All time</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="summary-card networth">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <i class="bi bi-wallet2 fs-1" style="color: #667eea;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">Net Worth</h6>
+                        <h4 class="mb-0" th:style="${netWorth >= 0} ? 'color: #28a745;' : 'color: #dc3545;'">$<span th:text="${#numbers.formatDecimal(netWorth, 1, 2)}">0.00</span></h4>
+                        <small class="text-muted">All time</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="summary-card count">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <i class="bi bi-list-ul fs-1" style="color: #ffc107;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">Transactions</h6>
+                        <h4 class="mb-0" style="color: #ffc107;"><span th:text="${#lists.size(transactions)}">0</span></h4>
+                        <small class="text-muted">Total count</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Enhanced Filters -->
+    <div class="filters-card">
+        <h5 class="mb-3"><i class="bi bi-funnel me-2"></i>Filter Transactions</h5>
+        <form th:action="@{/transactions}" method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="type" class="form-label fw-semibold">Transaction Type</label>
+                <select name="type" id="type" class="form-select">
+                    <option value="">All Types</option>
+                    <option value="INCOME" th:selected="${type == 'INCOME'}">💰 Income</option>
+                    <option value="EXPENSE" th:selected="${type == 'EXPENSE'}">💸 Expense</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="category" class="form-label fw-semibold">Category</label>
+                <select name="category" id="category" class="form-select">
+                    <option value="">All Categories</option>
+                    <option th:each="cat : ${categories}" 
+                            th:value="${cat.id}" 
+                            th:text="${cat.name}"
+                            th:selected="${category == cat.id}"></option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="startDate" class="form-label fw-semibold">Start Date</label>
+                <input type="date" name="startDate" id="startDate" class="form-control" th:value="${startDate}">
+            </div>
+            <div class="col-md-3">
+                <label for="endDate" class="form-label fw-semibold">End Date</label>
+                <input type="date" name="endDate" id="endDate" class="form-control" th:value="${endDate}">
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-filter">
+                    <i class="bi bi-search me-2"></i> Apply Filters
+                </button>
+                <a th:href="@{/transactions}" class="btn btn-clear">
+                    <i class="bi bi-x me-2"></i> Clear All
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Enhanced Transactions Table -->
+    <div class="transactions-table-card">
+        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+            <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Transaction History</h5>
+        </div>
+        <div class="card-body p-0">
+            <div th:if="${#lists.isEmpty(transactions)}" class="empty-state">
+                <i class="bi bi-inbox"></i>
+                <h5 class="mt-3 mb-2">No transactions found</h5>
+                <p class="text-muted mb-4">Start tracking your finances by adding your first transaction</p>
+                <a th:href="@{/transactions/new}" class="btn btn-add-transaction">
+                    <i class="bi bi-plus me-2"></i> Add Your First Transaction
+                </a>
+            </div>
+            <div th:unless="${#lists.isEmpty(transactions)}" class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th><i class="bi bi-calendar me-1"></i>Date</th>
+                            <th><i class="bi bi-text-paragraph me-1"></i>Description</th>
+                            <th><i class="bi bi-tags me-1"></i>Category</th>
+                            <th><i class="bi bi-arrow-left-right me-1"></i>Type</th>
+                            <th><i class="bi bi-currency-dollar me-1"></i>Amount</th>
+                            <th><i class="bi bi-gear me-1"></i>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="transaction : ${transactions}">
+                            <td>
+                                <div class="fw-semibold" th:text="${#temporals.format(transaction.transactionDate, 'MMM dd, yyyy')}">Date</div>
+                                <small class="text-muted" th:text="${#temporals.format(transaction.transactionDate, 'HH:mm')}">Time</small>
+                            </td>
+                            <td>
+                                <div class="fw-semibold" th:text="${transaction.description}">Description</div>
+                                <small th:if="${transaction.notes}" class="text-muted" th:text="${transaction.notes}">Notes</small>
+                            </td>
+                            <td>
+                                <span th:if="${transaction.category}" 
+                                      class="badge" 
+                                      th:style="'background: linear-gradient(135deg, ' + ${transaction.category.colorCode ?: '#667eea'} + ' 0%, ' + ${transaction.category.colorCode ?: '#764ba2'} + ' 100%); color: white;'"
+                                      th:text="${transaction.category.name}">Category</span>
+                                <span th:unless="${transaction.category}" class="badge" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white;">No Category</span>
+                            </td>
+                            <td>
+                                <span th:class="'badge ' + (${transaction.transactionType == 'INCOME'} ? 'bg-success' : 'bg-danger')"
+                                      th:text="${transaction.transactionType}">Type</span>
+                            </td>
+                            <td>
+                                <div th:class="'fw-bold fs-5 ' + (${transaction.transactionType == 'INCOME'} ? 'text-success' : 'text-danger')">
+                                    <i th:class="'bi me-1 ' + (${transaction.transactionType == 'INCOME'} ? 'bi-arrow-up' : 'bi-arrow-down')"></i>
+                                    <span th:text="(${transaction.transactionType == 'INCOME'} ? '+' : '-') + '$' + ${#numbers.formatDecimal(transaction.amount, 1, 2)}">Amount</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a th:href="@{/transactions/{id}/edit(id=${transaction.id})}" class="btn btn-outline-primary" title="Edit Transaction">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a th:href="@{/transactions/{id}/delete(id=${transaction.id})}" 
+                                       class="btn btn-outline-danger"
+                                       title="Delete Transaction"
+                                       onclick="return confirm('Are you sure you want to delete this transaction?')">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Enhanced Pagination -->
+    <div th:if="${totalPages > 1}" class="d-flex justify-content-center mt-4">
+        <nav>
+            <ul class="pagination">
+                <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                    <a class="page-link" th:href="@{/transactions(page=${currentPage - 1}, type=${type}, category=${category}, startDate=${startDate}, endDate=${endDate})}">
+                        <i class="bi bi-chevron-left me-1"></i>Previous
+                    </a>
+                </li>
+                <li th:each="page : ${#numbers.sequence(0, totalPages - 1)}" 
+                    class="page-item" 
+                    th:classappend="${page == currentPage} ? 'active'">
+                    <a class="page-link" th:href="@{/transactions(page=${page}, type=${type}, category=${category}, startDate=${startDate}, endDate=${endDate})}" 
+                       th:text="${page + 1}">1</a>
+                </li>
+                <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                    <a class="page-link" th:href="@{/transactions(page=${currentPage + 1}, type=${type}, category=${category}, startDate=${startDate}, endDate=${endDate})}">
+                        Next<i class="bi bi-chevron-right ms-1"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    </div>
+</div>
+
+<!-- Include Transaction Form Modal -->
+<div th:replace="fragments/forms :: transaction-form"></div>
+
+</body>
+</html>

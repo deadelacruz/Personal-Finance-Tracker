@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" 
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/base}">
+<head>
+    <title th:text="${pageTitle}">Expenses by Category - Personal Finance Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .category-expense-container {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        .category-expense-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><defs><radialGradient id="a" cx="50%" cy="50%"><stop offset="0%" stop-color="%23667eea" stop-opacity="0.1"/><stop offset="100%" stop-color="%23667eea" stop-opacity="0"/></radialGradient></defs><circle cx="100" cy="100" r="80" fill="url(%23a)"/><circle cx="900" cy="200" r="120" fill="url(%23a)"/><circle cx="500" cy="800" r="100" fill="url(%23a)"/><circle cx="200" cy="600" r="60" fill="url(%23a)"/></svg>') no-repeat center center;
+            background-size: cover;
+            opacity: 0.6;
+            z-index: 0;
+        }
+        
+        .category-expense-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        .page-header h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .summary-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .summary-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c);
+            background-size: 300% 100%;
+            animation: gradientShift 3s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .total-card::before {
+            background: linear-gradient(90deg, #dc3545, #fd7e14);
+        }
+        
+        .categories-card::before {
+            background: linear-gradient(90deg, #28a745, #20c997);
+        }
+        
+        .transactions-card::before {
+            background: linear-gradient(90deg, #007bff, #6f42c1);
+        }
+        
+        .growth-card::before {
+            background: linear-gradient(90deg, #ffc107, #e83e8c);
+        }
+        
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .card-subtitle {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .chart-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c);
+            background-size: 300% 100%;
+            animation: gradientShift 3s ease infinite;
+        }
+        
+        .chart-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 1rem;
+        }
+        
+        .category-list {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .category-list::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c);
+            background-size: 300% 100%;
+            animation: gradientShift 3s ease infinite;
+        }
+        
+        .category-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .category-item:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+            transform: translateX(5px);
+        }
+        
+        .category-item:last-child {
+            border-bottom: none;
+        }
+        
+        .category-info {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+        
+        .category-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .category-details {
+            flex: 1;
+        }
+        
+        .category-name {
+            font-weight: 600;
+            color: #495057;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .category-meta {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .category-amounts {
+            text-align: right;
+        }
+        
+        .category-amount {
+            font-weight: 700;
+            color: #dc3545;
+            font-size: 1.2rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .category-percentage {
+            font-size: 0.9rem;
+            color: #6c757d;
+            background: rgba(108, 117, 125, 0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+        }
+        
+        .progress-bar-custom {
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.8s ease;
+        }
+        
+        .insights-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .insights-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c);
+            background-size: 300% 100%;
+            animation: gradientShift 3s ease infinite;
+        }
+        
+        .insight-item {
+            padding: 1rem;
+            border-bottom: 1px solid #e9ecef;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .insight-item:last-child {
+            border-bottom: none;
+        }
+        
+        .insight-item.success {
+            border-left-color: #28a745;
+            background: rgba(40, 167, 69, 0.05);
+        }
+        
+        .insight-item.warning {
+            border-left-color: #ffc107;
+            background: rgba(255, 193, 7, 0.05);
+        }
+        
+        .insight-item.info {
+            border-left-color: #17a2b8;
+            background: rgba(23, 162, 184, 0.05);
+        }
+        
+        .insight-item.danger {
+            border-left-color: #dc3545;
+            background: rgba(220, 53, 69, 0.05);
+        }
+        
+        .insight-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .insight-message {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        @media (max-width: 768px) {
+            .summary-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .page-header h2 {
+                font-size: 2rem;
+            }
+            
+            .category-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .category-amounts {
+                text-align: left;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <div class="category-expense-container">
+            <div class="container category-expense-content">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <a th:href="@{/dashboard}" class="btn btn-outline-light me-3">
+                                <i class="bi bi-arrow-left me-2"></i> Back to Dashboard
+                            </a>
+                            <h2 th:text="${pageTitle}">Expenses by Category Analysis</h2>
+                            <p class="mb-0">Detailed breakdown of your spending patterns by category</p>
+                        </div>
+                        <div class="text-end">
+                            <div class="h4 mb-0" th:text="${#numbers.formatDecimal(analysis.totalExpenses, 1, 2)}">$0.00</div>
+                            <small>Total Expenses</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="summary-cards">
+                    <!-- Total Expenses Card -->
+                    <div class="card summary-card total-card">
+                        <div class="card-body text-center">
+                            <div class="card-icon text-danger">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="card-value text-danger" th:text="${#numbers.formatDecimal(analysis.totalExpenses, 1, 2)}">$0.00</div>
+                            <div class="card-subtitle">Total Expenses</div>
+                        </div>
+                    </div>
+
+                    <!-- Categories Count Card -->
+                    <div class="card summary-card categories-card">
+                        <div class="card-body text-center">
+                            <div class="card-icon text-success">
+                                <i class="fas fa-tags"></i>
+                            </div>
+                            <div class="card-value text-success" th:text="${analysis.categories.size()}">0</div>
+                            <div class="card-subtitle">Categories Used</div>
+                        </div>
+                    </div>
+
+                    <!-- Transactions Count Card -->
+                    <div class="card summary-card transactions-card">
+                        <div class="card-body text-center">
+                            <div class="card-icon text-primary">
+                                <i class="fas fa-receipt"></i>
+                            </div>
+                            <div class="card-value text-primary" th:text="${analysis.totalTransactions}">0</div>
+                            <div class="card-subtitle">Total Transactions</div>
+                        </div>
+                    </div>
+
+                    <!-- Growth Rate Card -->
+                    <div class="card summary-card growth-card">
+                        <div class="card-body text-center">
+                            <div class="card-icon text-warning">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="card-value text-danger" th:if="${growth != null and growth.totalGrowthRate != null and growth.totalGrowthRate >= 0}">
+                                <span th:text="${#numbers.formatDecimal(growth.totalGrowthRate, 1, 1)}">0.0</span>%
+                            </div>
+                            <div class="card-value text-success" th:if="${growth != null and growth.totalGrowthRate != null and growth.totalGrowthRate < 0}">
+                                <span th:text="${#numbers.formatDecimal(-growth.totalGrowthRate, 1, 1)}">0.0</span>%
+                            </div>
+                            <div class="card-value text-muted" th:if="${growth == null or growth.totalGrowthRate == null}">N/A</div>
+                            <div class="card-subtitle">Growth Rate (%)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="row">
+                    <!-- Pie Chart -->
+                    <div class="col-lg-6">
+                        <div class="card chart-container">
+                            <div class="card-body">
+                                <h5 class="chart-title">Expense Distribution</h5>
+                                <canvas id="categoryPieChart" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bar Chart -->
+                    <div class="col-lg-6">
+                        <div class="card chart-container">
+                            <div class="card-body">
+                                <h5 class="chart-title">Category Comparison</h5>
+                                <canvas id="categoryBarChart" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trends Chart -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card chart-container">
+                            <div class="card-body">
+                                <h5 class="chart-title">Monthly Category Trends</h5>
+                                <canvas id="categoryTrendsChart" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category List and Insights Row -->
+                <div class="row">
+                    <!-- Category Breakdown -->
+                    <div class="col-lg-8">
+                        <div class="card category-list">
+                            <div class="card-body">
+                                <h5 class="chart-title">Category Breakdown</h5>
+                                <div th:if="${#lists.isEmpty(analysis.categories)}" class="empty-state">
+                                    <i class="fas fa-chart-pie"></i>
+                                    <p>No expense data available for this period.</p>
+                                </div>
+                                <div th:unless="${#lists.isEmpty(analysis.categories)}">
+                                    <div th:each="category : ${analysis.categories}" class="category-item">
+                                        <div class="category-info">
+                                            <div class="category-color" th:style="'background-color: ' + ${category.colorCode}"></div>
+                                            <div class="category-details">
+                                                <div class="category-name" th:text="${category.name}">Category Name</div>
+                                                <div class="category-meta">
+                                                    <span th:text="${category.transactionCount}">0</span> transactions • 
+                                                    Avg: <span th:text="${#numbers.formatDecimal(category.averageTransactionAmount, 1, 2)}">$0.00</span>
+                                                </div>
+                                                <div class="progress-bar-custom">
+                                                    <div class="progress-fill" 
+                                                         th:style="'width: ' + ${category.percentage} + '%; background-color: ' + ${category.colorCode}">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="category-amounts">
+                                            <div class="category-amount" th:text="${#numbers.formatDecimal(category.amount, 1, 2)}">$0.00</div>
+                                            <div class="category-percentage" th:text="${#numbers.formatDecimal(category.percentage, 1, 1)} + '%'">0.0%</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Insights -->
+                    <div class="col-lg-4">
+                        <div class="card insights-container">
+                            <div class="card-body">
+                                <h5 class="chart-title">Insights & Recommendations</h5>
+                                <div th:if="${#lists.isEmpty(insights)}" class="empty-state">
+                                    <i class="fas fa-lightbulb"></i>
+                                    <p>No insights available.</p>
+                                </div>
+                                <div th:unless="${#lists.isEmpty(insights)}">
+                                    <div th:each="insight : ${insights}" class="insight-item" th:class="${insight.type}">
+                                        <div class="insight-title" th:text="${insight.title}">Insight Title</div>
+                                        <div class="insight-message" th:text="${insight.message}">Insight message</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Prepare data for charts
+            const categories = /*[[${analysis.categories}]]*/ [];
+            const trends = /*[[${trends}]]*/ {};
+            const monthLabels = /*[[${trends.monthLabels}]]*/ [];
+            
+            // Pie Chart Data
+            const pieLabels = categories.map(cat => cat.name);
+            const pieData = categories.map(cat => cat.amount);
+            const pieColors = categories.map(cat => cat.colorCode);
+            
+            // Bar Chart Data
+            const barLabels = categories.slice(0, 8).map(cat => cat.name);
+            const barData = categories.slice(0, 8).map(cat => cat.amount);
+            const barColors = categories.slice(0, 8).map(cat => cat.colorCode);
+            
+            // Pie Chart
+            const pieCtx = document.getElementById('categoryPieChart').getContext('2d');
+            new Chart(pieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: pieLabels,
+                    datasets: [{
+                        data: pieData,
+                        backgroundColor: pieColors,
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: {
+                                    size: 12,
+                                    weight: '600'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return label + ': $' + value.toLocaleString() + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Bar Chart
+            const barCtx = document.getElementById('categoryBarChart').getContext('2d');
+            new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: barLabels,
+                    datasets: [{
+                        data: barData,
+                        backgroundColor: barColors,
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                },
+                                font: {
+                                    size: 12
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Trends Chart
+            const trendsCtx = document.getElementById('categoryTrendsChart').getContext('2d');
+            const trendDatasets = [];
+            const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57'];
+            
+            let colorIndex = 0;
+            for (const [categoryName, monthlyData] of Object.entries(trends.monthlyData)) {
+                trendDatasets.push({
+                    label: categoryName,
+                    data: monthlyData,
+                    borderColor: colors[colorIndex % colors.length],
+                    backgroundColor: colors[colorIndex % colors.length] + '20',
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                });
+                colorIndex++;
+            }
+            
+            new Chart(trendsCtx, {
+                type: 'line',
+                data: {
+                    labels: monthLabels,
+                    datasets: trendDatasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15,
+                                font: {
+                                    size: 11,
+                                    weight: '600'
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                },
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+
+            // Add animation to progress bars
+            const progressBars = document.querySelectorAll('.progress-fill');
+            progressBars.forEach((bar, index) => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, 500 + (index * 100));
+            });
+        });
+    </script>
+</body>
+</html>
